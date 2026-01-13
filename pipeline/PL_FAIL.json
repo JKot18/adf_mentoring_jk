@@ -1,0 +1,20 @@
+{
+	"name": "PL_FAIL",
+	"properties": {
+		"activities": [
+			{
+				"name": "ACT_Fail_Pl",
+				"type": "Fail",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"message": "Fail intentionally",
+					"errorCode": "303"
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2026-01-07T22:45:07Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

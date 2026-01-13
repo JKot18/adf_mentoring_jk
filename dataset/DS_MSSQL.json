@@ -1,0 +1,67 @@
+{
+	"name": "DS_MSSQL",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_MSSQL",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"table_name": {
+				"type": "string"
+			},
+			"new_watermark": {
+				"type": "string"
+			},
+			"last_watermark": {
+				"type": "string",
+				"defaultValue": "last_vatermark"
+			}
+		},
+		"annotations": [],
+		"type": "SqlServerTable",
+		"schema": [
+			{
+				"name": "CinemaCode",
+				"type": "nvarchar"
+			},
+			{
+				"name": "CinemaName",
+				"type": "nvarchar"
+			},
+			{
+				"name": "MovieId",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "TicketCount",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "TicketPrice",
+				"type": "decimal",
+				"precision": 4,
+				"scale": 1
+			},
+			{
+				"name": "TransactionId",
+				"type": "nvarchar"
+			},
+			{
+				"name": "TransactionDt",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": {
+				"value": "@dataset().table_name",
+				"type": "Expression"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,28 @@
+{
+	"name": "LS_MSSQL",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "SqlServer",
+		"typeProperties": {
+			"server": "EPCZPRAW0123",
+			"database": "CinemaTickets",
+			"encrypt": "mandatory",
+			"trustServerCertificate": true,
+			"authenticationType": "SQL",
+			"userName": "stg",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_KEYVAULT",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "sql-connection-mssql"
+			}
+		},
+		"connectVia": {
+			"referenceName": "IR-MENTORING-ADF-JK",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

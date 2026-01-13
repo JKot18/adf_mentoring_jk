@@ -1,0 +1,25 @@
+{
+	"name": "LS_ASQL_MOVIES",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureSqlDatabase",
+		"typeProperties": {
+			"server": "tcp:azure-mentoring-jk.database.windows.net,1433",
+			"database": "movies",
+			"encrypt": "True",
+			"trustServerCertificate": false,
+			"authenticationType": "SQL",
+			"userName": "etl",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_KEYVAULT",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "sql-connection-etl"
+			},
+			"multipleActiveResultSets": "False"
+		}
+	}
+}

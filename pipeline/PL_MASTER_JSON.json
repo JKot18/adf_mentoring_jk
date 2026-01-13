@@ -1,0 +1,72 @@
+{
+	"name": "PL_MASTER_JSON",
+	"properties": {
+		"activities": [
+			{
+				"name": "PL_INT_ABLB_ADLS_JSON",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_INT_ABLB_ADLS_JSON",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "PL_INT_ADLS_ASQL_JSON",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "PL_INT_ABLB_ADLS_JSON",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_INT_ADLS_ASQL_JSON",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "PL_INT_JSON_ARCHIVE",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "PL_INT_ADLS_ASQL_JSON",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_INT_JSON_ARCHIVE",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2025-10-23T20:09:27Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

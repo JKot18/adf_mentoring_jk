@@ -1,0 +1,481 @@
+{
+	"name": "PL_INT_MSQL_ASQL",
+	"properties": {
+		"activities": [
+			{
+				"name": "ACT_GEN_LKP_GetNewWatermark",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlServerSource",
+						"sqlReaderQuery": {
+							"value": "@replace('SELECT MAX([TransactionDt]) AS NewWatermark FROM dbo.{table}', '{table}', pipeline().parameters.source_table)",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_MSSQL",
+						"type": "DatasetReference",
+						"parameters": {
+							"table_name": {
+								"value": "@pipeline().parameters.source_table",
+								"type": "Expression"
+							},
+							"new_watermark": "new_watermark",
+							"last_watermark": "last_watermark"
+						}
+					}
+				}
+			},
+			{
+				"name": "ACT_GEN_LKP_GetLastWatermark",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "@replace('select max(WatermarkValue) as LastWatermark FROM [stg].[watermark]\nwhere TableName = ''{table}''', '{table}', pipeline().parameters.source_table)",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_ASQL_MOVIES",
+						"type": "DatasetReference",
+						"parameters": {
+							"table": {
+								"value": "@pipeline().parameters.source_table",
+								"type": "Expression"
+							},
+							"schema": "dbo"
+						}
+					}
+				}
+			},
+			{
+				"name": "ACT_ITRC_IF_NO_WATERMARK",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "ACT_GEN_LKP_GetNewWatermark",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "ACT_GEN_LKP_GetLastWatermark",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(activity('ACT_GEN_LKP_GetLastWatermark').output.firstRow.LastWatermark, null)",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "ACT_MT_Copy_Incremental_Load",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "SqlServerSource",
+									"sqlReaderQuery": {
+										"value": "@concat('SELECT * FROM dbo.tickets WHERE TransactionDt > ''', activity('ACT_GEN_LKP_GetLastWatermark').output.firstRow.LastWatermark, ''' AND TransactionDt <= ''', activity('ACT_GEN_LKP_GetNewWatermark').output.firstRow.NewWatermark, '''')",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"preCopyScript": "truncate table [stg].[cinema_tickets]",
+									"writeBehavior": "insert",
+									"sqlWriterUseTableLock": false,
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"mappings": [
+										{
+											"source": {
+												"name": "CinemaCode",
+												"type": "String",
+												"physicalType": "nvarchar"
+											},
+											"sink": {
+												"name": "cinema_code",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "CinemaName",
+												"type": "String",
+												"physicalType": "nvarchar"
+											},
+											"sink": {
+												"name": "cinema_name",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "MovieId",
+												"type": "Int32",
+												"physicalType": "int"
+											},
+											"sink": {
+												"name": "movie_id",
+												"type": "Int32",
+												"physicalType": "int"
+											}
+										},
+										{
+											"source": {
+												"name": "TicketCount",
+												"type": "Int32",
+												"physicalType": "int"
+											},
+											"sink": {
+												"name": "ticket_count",
+												"type": "Int32",
+												"physicalType": "int"
+											}
+										},
+										{
+											"source": {
+												"name": "TicketPrice",
+												"type": "Decimal",
+												"physicalType": "decimal",
+												"scale": 1,
+												"precision": 4
+											},
+											"sink": {
+												"name": "ticket_price",
+												"type": "Decimal",
+												"physicalType": "decimal",
+												"scale": 1,
+												"precision": 4
+											}
+										},
+										{
+											"source": {
+												"name": "TransactionId",
+												"type": "String",
+												"physicalType": "nvarchar"
+											},
+											"sink": {
+												"name": "transaction_id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "TransactionDt",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											},
+											"sink": {
+												"name": "transaction_date",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											}
+										}
+									],
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_MSSQL",
+									"type": "DatasetReference",
+									"parameters": {
+										"table_name": "tickets",
+										"new_watermark": {
+											"value": "@activity('ACT_GEN_LKP_GetNewWatermark').output.firstRow.NewWatermark",
+											"type": "Expression"
+										},
+										"last_watermark": {
+											"value": "@activity('ACT_GEN_LKP_GetLastWatermark').output.firstRow.LastWatermark",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_ASQL_MOVIES",
+									"type": "DatasetReference",
+									"parameters": {
+										"table": "cinema_tickets",
+										"schema": "stg"
+									}
+								}
+							]
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "ACT_MT_Copy_Full_Load",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "SqlServerSource",
+									"sqlReaderQuery": {
+										"value": "@replace('SELECT * FROM dbo.tickets where TransactionDt <= ''{new_watermark}'' ', '{new_watermark}', activity('ACT_GEN_LKP_GetNewWatermark').output.firstRow.NewWatermark)",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"preCopyScript": "truncate table [stg].[cinema_tickets]",
+									"writeBehavior": "insert",
+									"sqlWriterUseTableLock": false,
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"mappings": [
+										{
+											"source": {
+												"name": "CinemaCode",
+												"type": "String",
+												"physicalType": "nvarchar"
+											},
+											"sink": {
+												"name": "cinema_code",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "CinemaName",
+												"type": "String",
+												"physicalType": "nvarchar"
+											},
+											"sink": {
+												"name": "cinema_name",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "MovieId",
+												"type": "Int32",
+												"physicalType": "int"
+											},
+											"sink": {
+												"name": "movie_id",
+												"type": "Int32",
+												"physicalType": "int"
+											}
+										},
+										{
+											"source": {
+												"name": "TicketCount",
+												"type": "Int32",
+												"physicalType": "int"
+											},
+											"sink": {
+												"name": "ticket_count",
+												"type": "Int32",
+												"physicalType": "int"
+											}
+										},
+										{
+											"source": {
+												"name": "TicketPrice",
+												"type": "Decimal",
+												"physicalType": "decimal",
+												"scale": 1,
+												"precision": 4
+											},
+											"sink": {
+												"name": "ticket_price",
+												"type": "Decimal",
+												"physicalType": "decimal",
+												"scale": 1,
+												"precision": 4
+											}
+										},
+										{
+											"source": {
+												"name": "TransactionId",
+												"type": "String",
+												"physicalType": "nvarchar"
+											},
+											"sink": {
+												"name": "transaction_id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "TransactionDt",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											},
+											"sink": {
+												"name": "transaction_date",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											}
+										}
+									],
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_MSSQL",
+									"type": "DatasetReference",
+									"parameters": {
+										"table_name": "tickets",
+										"new_watermark": {
+											"value": "@activity('ACT_GEN_LKP_GetLastWatermark').output.firstRow.LastWatermark",
+											"type": "Expression"
+										},
+										"last_watermark": "last_vatermark"
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_ASQL_MOVIES",
+									"type": "DatasetReference",
+									"parameters": {
+										"table": "cinema_tickets",
+										"schema": "stg"
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "ACT_GEN_SPRC_UpdateTables",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "ACT_ITRC_IF_NO_WATERMARK",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[stg].[MasterUpdate]",
+					"storedProcedureParameters": {
+						"WatermarkTable": {
+							"value": {
+								"value": "@pipeline().parameters.watermark_table",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"NewWatermark": {
+							"value": {
+								"value": "@activity('ACT_GEN_LKP_GetNewWatermark').output.firstRow.NewWatermark",
+								"type": "Expression"
+							},
+							"type": "Datetime"
+						},
+						"SourceTable": {
+							"value": {
+								"value": "@pipeline().parameters.source_table",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_ASQL_MOVIES",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"source_table": {
+				"type": "string",
+				"defaultValue": "tickets"
+			},
+			"watermark_table": {
+				"type": "string",
+				"defaultValue": "watermark"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-11-05T12:55:40Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

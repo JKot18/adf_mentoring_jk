@@ -1,0 +1,261 @@
+{
+	"name": "PL_INT_ABLB_ADLS_JSON",
+	"properties": {
+		"activities": [
+			{
+				"name": "ACT_GEN_LKP_GetLastWatermark",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "@replace('select max(WatermarkValue) as LastWatermark FROM [stg].[watermark]\nwhere TableName = ''{table}''', '{table}', pipeline().parameters.source_table)",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_ASQL_MOVIES",
+						"type": "DatasetReference",
+						"parameters": {
+							"table": {
+								"value": "@pipeline().parameters.source_table",
+								"type": "Expression"
+							},
+							"schema": "dbo"
+						}
+					}
+				}
+			},
+			{
+				"name": "If Condition1",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "ACT_GEN_LKP_GetLastWatermark",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "ACT_GEN_VAR_GetNewWatermark",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(activity('ACT_GEN_LKP_GetLastWatermark').output.firstRow.LastWatermark, null)",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "ACT_MT_Copy_Incremental",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "JsonSource",
+									"storeSettings": {
+										"type": "AzureBlobStorageReadSettings",
+										"recursive": true,
+										"modifiedDatetimeStart": {
+											"value": "@activity('ACT_GEN_LKP_GetLastWatermark').output.firstRow.LastWatermark",
+											"type": "Expression"
+										},
+										"modifiedDatetimeEnd": {
+											"value": "@variables('NewWatermark')",
+											"type": "Expression"
+										},
+										"wildcardFolderPath": "files",
+										"wildcardFileName": "*.json",
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "JsonReadSettings"
+									}
+								},
+								"sink": {
+									"type": "JsonSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "JsonWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_ABLB_AZUREMENTORING_ONLINE",
+									"type": "DatasetReference"
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_ADLS_AZUREMENTORINGDATALAKE_ONLINE",
+									"type": "DatasetReference",
+									"parameters": {
+										"folder": "online"
+									}
+								}
+							]
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "ACT_MT_Copy_Full",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "JsonSource",
+									"storeSettings": {
+										"type": "AzureBlobStorageReadSettings",
+										"recursive": true,
+										"modifiedDatetimeEnd": {
+											"value": "@variables('NewWatermark')",
+											"type": "Expression"
+										},
+										"wildcardFolderPath": "files",
+										"wildcardFileName": "*.json",
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "JsonReadSettings"
+									}
+								},
+								"sink": {
+									"type": "JsonSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "JsonWriteSettings"
+									}
+								},
+								"enableStaging": false,
+								"parallelCopies": 16,
+								"dataIntegrationUnits": 4
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_ABLB_AZUREMENTORING_ONLINE",
+									"type": "DatasetReference"
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_ADLS_AZUREMENTORINGDATALAKE_ONLINE",
+									"type": "DatasetReference",
+									"parameters": {
+										"folder": "online"
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "ACT_GEN_VAR_GetNewWatermark",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "NewWatermark",
+					"value": {
+						"value": "@formatDateTime(pipeline().TriggerTime, 'yyyy-MM-dd HH:mm:ss')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ACT_GEN_LKP_UpdateWatermark",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "If Condition1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "INSERT INTO [stg].[watermark] (TableName, WatermarkValue)\nOUTPUT inserted.TableName, inserted.WatermarkValue\nVALUES ('@{pipeline().parameters.source_table}', '@{variables('NewWatermark')}')",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_ASQL_MOVIES",
+						"type": "DatasetReference",
+						"parameters": {
+							"table": "watermark",
+							"schema": "stg"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"source_table": {
+				"type": "string",
+				"defaultValue": "online"
+			}
+		},
+		"variables": {
+			"NewWatermark": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-10-23T19:52:43Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

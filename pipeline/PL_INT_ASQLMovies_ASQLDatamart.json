@@ -1,0 +1,71 @@
+{
+	"name": "PL_INT_ASQLMovies_ASQLDatamart",
+	"properties": {
+		"activities": [
+			{
+				"name": "ACT_MT_DF_PopulateDataMart",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "DF_PopulateDataMart",
+						"type": "DataFlowReference",
+						"parameters": {
+							"DatetimeNow": {
+								"value": "'@{formatDateTime(pipeline().TriggerTime,'yyyy-MM-dd HH:mm:ss')}'",
+								"type": "Expression"
+							}
+						}
+					},
+					"integrationRuntime": {
+						"referenceName": "Azure-IR-M8",
+						"type": "IntegrationRuntimeReference"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "DF_PopulateFact",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "ACT_MT_DF_PopulateDataMart",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "DF_PopulateFact",
+						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2025-12-26T16:32:59Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

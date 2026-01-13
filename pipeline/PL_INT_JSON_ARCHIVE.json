@@ -1,0 +1,110 @@
+{
+	"name": "PL_INT_JSON_ARCHIVE",
+	"properties": {
+		"activities": [
+			{
+				"name": "ACT_MT_Copy_ADLS_ADLS_ARCHIVE",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"wildcardFolderPath": "online",
+							"wildcardFileName": "*.json",
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"sink": {
+						"type": "JsonSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings",
+							"copyBehavior": "PreserveHierarchy"
+						},
+						"formatSettings": {
+							"type": "JsonWriteSettings"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_ADLS_AZUREMENTORINGDATALAKE_ONLINE",
+						"type": "DatasetReference",
+						"parameters": {
+							"folder": "online"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_ADLS_AZUREMENTORINGDATALAKE_ONLINE",
+						"type": "DatasetReference",
+						"parameters": {
+							"folder": "online/archive"
+						}
+					}
+				]
+			},
+			{
+				"name": "ACT_GEN_DEL_RAW_MOVIES",
+				"type": "Delete",
+				"dependsOn": [
+					{
+						"activity": "ACT_MT_Copy_ADLS_ADLS_ARCHIVE",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "DS_ADLS_AZUREMENTORINGDATALAKE_ONLINE",
+						"type": "DatasetReference",
+						"parameters": {
+							"folder": "online"
+						}
+					},
+					"logStorageSettings": {
+						"linkedServiceName": {
+							"referenceName": "LS_GEN2_AZUREMENTORINGDATALAKEJK",
+							"type": "LinkedServiceReference"
+						},
+						"path": "log/delete-log"
+					},
+					"enableLogging": true,
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"recursive": false,
+						"wildcardFileName": "*.json",
+						"enablePartitionDiscovery": false
+					}
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2025-10-23T19:52:43Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
