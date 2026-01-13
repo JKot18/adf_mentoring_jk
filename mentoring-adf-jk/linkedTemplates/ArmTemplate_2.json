@@ -13,6 +13,169 @@
 	},
 	"resources": [
 		{
+			"name": "[concat(parameters('factoryName'), '/DF_PopulateDataMart')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "MoviesServies",
+								"type": "DatasetReference"
+							},
+							"name": "sourceMoviesService"
+						},
+						{
+							"dataset": {
+								"referenceName": "moviesMovies",
+								"type": "DatasetReference"
+							},
+							"name": "sourceMovies"
+						},
+						{
+							"dataset": {
+								"referenceName": "MoviesStatus",
+								"type": "DatasetReference"
+							},
+							"name": "sourceMoviesStatus"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DataMartService",
+								"type": "DatasetReference"
+							},
+							"name": "sinkDataMartService"
+						},
+						{
+							"dataset": {
+								"referenceName": "DataMart",
+								"type": "DatasetReference"
+							},
+							"name": "SinkDataMartMovies"
+						}
+					],
+					"transformations": [
+						{
+							"name": "DatetimeService"
+						},
+						{
+							"name": "DatetimeMovies"
+						},
+						{
+							"name": "joinMoviesStatus"
+						}
+					],
+					"scriptLines": [
+						"parameters{",
+						"     DatetimeNow as string",
+						"}",
+						"source(output(",
+						"          ServiceId as integer,",
+						"          ServiceCode as string,",
+						"          ServiceName as string,",
+						"          CreatedDate as timestamp,",
+						"          ModifiedDate as timestamp",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> sourceMoviesService",
+						"source(output(",
+						"          MovieId as integer,",
+						"          MovieIdNK as integer,",
+						"          Budget as integer,",
+						"          HomepagePath as string,",
+						"          Title as string,",
+						"          OriginalTitle as string,",
+						"          ReleaseDate as date,",
+						"          Revenue as long,",
+						"          Runtime as integer,",
+						"          MovieStatusId as integer,",
+						"          AvgVote as decimal(3,1),",
+						"          CreatedDate as timestamp,",
+						"          ModifiedDate as timestamp,",
+						"          SrcFileName as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> sourceMovies",
+						"source(output(",
+						"          MovieStatusId as integer,",
+						"          MovieStatusName as string,",
+						"          CreatedDate as timestamp",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> sourceMoviesStatus",
+						"sourceMoviesService derive(CreatedDate = toTimestamp(\r",
+						"$DatetimeNow\r",
+						"),",
+						"          ModifiedDate = toTimestamp($DatetimeNow)) ~> DatetimeService",
+						"sourceMovies derive(CreatedDate = toTimestamp($DatetimeNow),",
+						"          ModifiedDate = toTimestamp($DatetimeNow)) ~> DatetimeMovies",
+						"DatetimeMovies, sourceMoviesStatus join(sourceMovies@MovieStatusId == sourceMoviesStatus@MovieStatusId,",
+						"     joinType:'left',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> joinMoviesStatus",
+						"DatetimeService sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          ServiceKey as integer,",
+						"          ServiceCode as string,",
+						"          ServiceName as string,",
+						"          CreatedDate as timestamp,",
+						"          ModifiedDate as timestamp",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     truncate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sinkDataMartService",
+						"joinMoviesStatus sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          MovieKey as integer,",
+						"          MovieIdNK as integer,",
+						"          Title as string,",
+						"          ReleaseDate as date,",
+						"          Runtime as integer,",
+						"          MovieStatus as string,",
+						"          CreatedDate as timestamp,",
+						"          ModifiedDate as timestamp",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     truncate:true,",
+						"     format: 'table',",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          MovieIdNK,",
+						"          Title,",
+						"          ReleaseDate,",
+						"          Runtime,",
+						"          MovieStatus = MovieStatusName,",
+						"          CreatedDate = DatetimeMovies@CreatedDate,",
+						"          ModifiedDate",
+						"     )) ~> SinkDataMartMovies"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/DF_PopulateFact')]",
 			"type": "Microsoft.DataFactory/factories/dataflows",
 			"apiVersion": "2018-06-01",
@@ -278,6 +441,7 @@
 				"lastPublishTime": "2025-12-26T16:32:59Z"
 			},
 			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DF_PopulateDataMart')]",
 				"[concat(variables('factoryId'), '/dataflows/DF_PopulateFact')]"
 			]
 		},
