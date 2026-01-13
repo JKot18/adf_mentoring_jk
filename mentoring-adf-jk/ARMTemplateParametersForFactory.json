@@ -8,6 +8,9 @@
 		"LS_BLOB_AZUREMENTORINGAU_connectionString": {
 			"value": ""
 		},
+		"AzureSqlDatabasePass_password": {
+			"value": ""
+		},
 		"LS_ASQL_DATAMART_properties_typeProperties_server": {
 			"value": "azure-mentoring-jk.database.windows.net"
 		},
@@ -46,6 +49,15 @@
 		},
 		"LS_MSSQL_properties_typeProperties_userName": {
 			"value": "stg"
+		},
+		"AzureSqlDatabasePass_properties_typeProperties_server": {
+			"value": "azure-mentoring-jk.database.windows.net"
+		},
+		"AzureSqlDatabasePass_properties_typeProperties_database": {
+			"value": "movies"
+		},
+		"AzureSqlDatabasePass_properties_typeProperties_userName": {
+			"value": "adminjk"
 		}
 	}
 }

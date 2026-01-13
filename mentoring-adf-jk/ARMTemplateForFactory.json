@@ -11,6 +11,10 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'LS_BLOB_AZUREMENTORINGAU'"
 		},
+		"AzureSqlDatabasePass_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'AzureSqlDatabasePass'"
+		},
 		"LS_ASQL_DATAMART_properties_typeProperties_server": {
 			"type": "string",
 			"defaultValue": "azure-mentoring-jk.database.windows.net"
@@ -62,6 +66,18 @@
 		"LS_MSSQL_properties_typeProperties_userName": {
 			"type": "string",
 			"defaultValue": "stg"
+		},
+		"AzureSqlDatabasePass_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "azure-mentoring-jk.database.windows.net"
+		},
+		"AzureSqlDatabasePass_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "movies"
+		},
+		"AzureSqlDatabasePass_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "adminjk"
 		}
 	},
 	"variables": {
@@ -4285,6 +4301,28 @@
 				"[concat(variables('factoryId'), '/datasets/DataMartFactOnlinePurchase')]",
 				"[concat(variables('factoryId'), '/datasets/OnlinePurchaiseSnap')]"
 			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlDatabasePass')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('AzureSqlDatabasePass_properties_typeProperties_server')]",
+					"database": "[parameters('AzureSqlDatabasePass_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('AzureSqlDatabasePass_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('AzureSqlDatabasePass_password')]"
+					}
+				}
+			},
+			"dependsOn": []
 		}
 	]
 }
