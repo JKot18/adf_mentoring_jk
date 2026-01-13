@@ -1,0 +1,6 @@
+{
+	"secret_post": {
+		"type": "string",
+		"value": "https://azure-mentoring-jk.vault.azure.net/secrets/post-email?api-version=7.5"
+	}
+}

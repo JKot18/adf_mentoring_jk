@@ -1,0 +1,57 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "mentoring-adf-jk"
+		},
+		"LS_BLOB_AZUREMENTORINGAU_connectionString": {
+			"value": ""
+		},
+		"LS_ASQL_DATAMART_properties_typeProperties_server": {
+			"value": "azure-mentoring-jk.database.windows.net"
+		},
+		"LS_ASQL_DATAMART_properties_typeProperties_database": {
+			"value": "DataMart"
+		},
+		"LS_ASQL_DATAMART_properties_typeProperties_userName": {
+			"value": "etl"
+		},
+		"LS_ASQL_MOVIES_properties_typeProperties_server": {
+			"value": "tcp:azure-mentoring-jk.database.windows.net,1433"
+		},
+		"LS_ASQL_MOVIES_properties_typeProperties_database": {
+			"value": "movies"
+		},
+		"LS_ASQL_MOVIES_properties_typeProperties_userName": {
+			"value": "etl"
+		},
+		"LS_BLOB_AZUREMENTORINGSTORAGEJK_properties_typeProperties_sasUri_secretName": {
+			"value": "secret-blob-azurementoringstoragejk"
+		},
+		"LS_BLOB_AZUREMENTORING_ONLINE_properties_typeProperties_sasUri_secretName": {
+			"value": "secret-blob-azurementoringstorage-online"
+		},
+		"LS_GEN2_AZUREMENTORINGDATALAKEJK_properties_typeProperties_url": {
+			"value": "https://azurementoringdatalakejk.dfs.core.windows.net/"
+		},
+		"LS_KEYVAULT_properties_typeProperties_baseUrl": {
+			"value": "https://azure-mentoring-jk.vault.azure.net/"
+		},
+		"LS_MSSQL_properties_typeProperties_server": {
+			"value": "EPCZPRAW0123"
+		},
+		"LS_MSSQL_properties_typeProperties_database": {
+			"value": "CinemaTickets"
+		},
+		"LS_MSSQL_properties_typeProperties_userName": {
+			"value": "stg"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}
